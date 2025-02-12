@@ -6,7 +6,7 @@ import pathlib
 import csv
 
 # config
-MARSDIR = '/opt/medcom/log/'
+MARSDIR: str = '/opt/medcom/log/'
 
 if os.path.exists(MARSDIR):
     target_dir = MARSDIR
@@ -19,7 +19,7 @@ if len(all_files)==0:
     raise RuntimeError(f'No .csv file found recurivelty from this dir : {target_dir}')
 
 # read all files & store data
-seq = []
+seq: list[dict] = []
 for filepath in all_files:
     with open(file=filepath, mode='r') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';')
@@ -33,9 +33,9 @@ for filepath in all_files:
 #         # print(f"{row_idx} {row_name}")
 #         fid.writelines(f"{row_idx} {row_name} \n")
 
-n = len(seq)
-len_SeqName :int = 0
-len_ProtName:int = 0
+n           : int = len(seq)
+len_SeqName : int = 0
+len_ProtName: int = 0
 for idx in range(n):
     len_SeqName  = max(len(seq[idx][ 'SeqName']),len_SeqName)
     len_ProtName = max(len(seq[idx]['ProtName']),len_ProtName)
