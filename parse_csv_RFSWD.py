@@ -1,14 +1,22 @@
+# intented python version : 3.9
+
 # builtin modules
 import os
 import pathlib
 import csv
 
-cwd = os.getcwd()
+# config
+MARSDIR = '/opt/medcom/log/'
+
+if os.path.exists(MARSDIR):
+    target_dir = MARSDIR
+else:
+    target_dir = os.getcwd()
 
 # fetch all .csv files
-all_files = sorted(pathlib.Path(cwd).rglob('*csv'))
+all_files = sorted(pathlib.Path(target_dir).rglob('RFSWD*csv'))
 if len(all_files)==0:
-    raise RuntimeError(f'No .csv file recurivelty from this dir : {cwd}')
+    raise RuntimeError(f'No .csv file recurivelty from this dir : {target_dir}')
 
 # read all files & store data
 seq = []
