@@ -8,6 +8,7 @@ import csv
 
 ###############################################################################
 # config
+###############################################################################
 MARSDIR      : str   = '/opt/medcom/log/'
 LIM_HEAD     : float =  3.2
 LIM_HEADLOCAL: float = 20.0
@@ -15,6 +16,8 @@ LIM_HEADLOCAL: float = 20.0
 
 ###############################################################################
 # local functions & classes
+###############################################################################
+
 class FileData:
     def __init__(self) -> None:
         self.filepath: str = ''
@@ -28,20 +31,15 @@ class FileData:
     def nSeq(self) -> int:
         return len(self.Seq)
 
-###############################################################################
-def ColorFormater(
-            r: int,
-            g: int,
-            b: int,
-            value: float
-            ) -> str:
-        return f"\033[38;2;{r};{g};{b}m{value}\033[0m"
 
-###############################################################################
-def ColorizeFloat(value: float, min_value: float, max_value: float) -> str:
+def ColorFormater(rgb: tuple[int,int,int], value: any) -> str:
+        return f"\033[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m{value}\033[0m"
+
+
+def GetColor(value: float, min_value: float, max_value: float) -> tuple[int, int, int]:
     
-    if value < min_value: return ColorFormater(50,50,50, value)
-    if value > max_value: return ColorFormater(255,0,255, value)
+    if value < min_value: return  50,50, 50
+    if value > max_value: return 255, 0,255
 
     r,g,b = 1,1,1
 
@@ -67,11 +65,13 @@ def ColorizeFloat(value: float, min_value: float, max_value: float) -> str:
     g = int(255*g)
     b = int(255*b)
         
-    return ColorFormater(r,g,b, value)
+    return r, g, b
 
 
 ###############################################################################
-def main():
+# main
+###############################################################################
+def main() -> None:
 
     if os.path.exists(MARSDIR):
         target_dir = MARSDIR
@@ -106,6 +106,7 @@ def main():
     #         # print(f"{row_idx} {row_name}")
     #         fid.writelines(f"{row_idx} {row_name} \n")
 
+    # prepare "column" size so it looks nice
     nData       : int = len(Data)
     len_SeqName : int = 0
     len_ProtName: int = 0
@@ -122,35 +123,30 @@ def main():
             if '%AdjustSeq%'  in seq['SeqName']: continue
             if '%ServiceSeq%' in seq['SeqName']: continue
 
-            if len(seq['AspVal[2][0]'])>0:
-                Head_value_WperKg = float(seq['AspVal[2][0]'])
-            else:
-                Head_value_WperKg = -2
-            Head_relative_WperKg = Head_value_WperKg / LIM_HEAD
+            Head_value_WperKg        = float(seq['AspVal[2][0]'])  if len(seq['AspVal[2][0]'])>0 else -2
+            Head_relative_WperKg     = Head_value_WperKg / LIM_HEAD
+            Head_value_WperKg_str    = ColorFormater(GetColor(Head_value_WperKg   , 0, LIM_HEAD), "{: 7.3f}".format(Head_value_WperKg   ))
+            Head_relative_WperKg_str = ColorFormater(GetColor(Head_relative_WperKg, 0,        1), "{: 7.3f}".format(Head_relative_WperKg))
 
-            if len(seq['AspVal[3][0]'])>0:
-                HeadLocal_value_WperKg = float(seq['AspVal[3][0]'])
-            else:
-                HeadLocal_value_WperKg = -2
-            HeadLocal_relative_WperKg = HeadLocal_value_WperKg / LIM_HEADLOCAL
+            HeadLocal_value_WperKg        = float(seq['AspVal[3][0]']) if len(seq['AspVal[3][0]'])>0 else -2
+            HeadLocal_relative_WperKg     = HeadLocal_value_WperKg / LIM_HEADLOCAL
+            HeadLocal_value_WperKg_str    = ColorFormater(GetColor(HeadLocal_value_WperKg   , 0, LIM_HEADLOCAL), "{: 7.3f}".format(HeadLocal_value_WperKg   ))
+            HeadLocal_relative_WperKg_str = ColorFormater(GetColor(HeadLocal_relative_WperKg, 0,             1), "{: 7.3f}".format(HeadLocal_relative_WperKg))
 
             line = (
                 f"{seq['Date']} {seq['Time']} {seq['SeqName']:{len_SeqName}s} {seq['ProtName']:{len_ProtName}s} - "
-                f"PREDICTED (W/Kg ~ relative): Head ({Head_value_WperKg: 7.3f} ~ {Head_relative_WperKg: 7.3f}) HeadLocal ({HeadLocal_value_WperKg: 7.3f} ~ {HeadLocal_relative_WperKg: 7.3f})"
+                f"PREDICTED (W/Kg ~ relative): Head ({Head_value_WperKg_str} ~ {Head_relative_WperKg_str}) HeadLocal ({HeadLocal_value_WperKg_str} ~ {HeadLocal_relative_WperKg_str})"
                 )
             print(line)
 
 
-
-
-###############################################################################
 if __name__ == '__main__':
 
-    # to test colors
-    #
+    # min_value, max_value = 0, 20
+    # print("Color check : ")
     # values = range(-3, 23)
     # for val in values:
-    #     print(ColorizeFloat(val, 0, 20))
+    #     print(ColorFormater(GetColor(val, min_value, max_value), "{: 7.3f}".format(val)))
 
     main()
 
