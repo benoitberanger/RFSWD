@@ -142,9 +142,13 @@ def main() -> None:
             HeadLocal_value_WperKg_str    = ColorFormater(GetColor(HeadLocal_value_WperKg   , 0, LIM_HEADLOCAL), "{: 7.3f}".format(HeadLocal_value_WperKg   ))
             HeadLocal_relative_WperKg_str = ColorFormater(GetColor(HeadLocal_relative_WperKg, 0,             1), "{: 7.3f}".format(HeadLocal_relative_WperKg))
 
+            BoreTemp     = float(seq['BoreTemp'])
+            BoreTemp_str = ColorFormater(GetColor(BoreTemp, 18, 25), "{: 4.1f}".format(BoreTemp))
+
             line = (
                 f"{seq['Date']} {seq['Time']} {seq['SeqName']:{len_SeqName}s} {seq['ProtName']:{len_ProtName}s} - "
-                f"PREDICTED (W/Kg ~ relative): Head ({Head_value_WperKg_str} ~ {Head_relative_WperKg_str}) HeadLocal ({HeadLocal_value_WperKg_str} ~ {HeadLocal_relative_WperKg_str})"
+                f"PREDICTED (W/Kg ~ relative): Head ({Head_value_WperKg_str} ~ {Head_relative_WperKg_str}) HeadLocal ({HeadLocal_value_WperKg_str} ~ {HeadLocal_relative_WperKg_str}) - "
+                f"BoreTemp={BoreTemp_str}"
                 )
             print(line)
 
