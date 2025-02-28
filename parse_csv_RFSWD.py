@@ -3,6 +3,7 @@
 # builtin modules
 import os
 import pathlib
+import re
 import csv
 
 
@@ -79,13 +80,21 @@ def main() -> None:
         target_dir = os.getcwd()
 
     # fetch all .csv files
-    all_files = sorted(pathlib.Path(target_dir).rglob('RFSWD*csv'))
+    all_files = sorted(pathlib.Path(target_dir).rglob('RFSWDHistoryList*csv'))
     if len(all_files)==0:
-        raise RuntimeError(f'No .csv file found recurivelty from this dir : {target_dir}')
+        raise RuntimeError(f'No RFSWDHistoryList*csv file found recurivelty from this dir : {target_dir}')
+
+    # filter
+    filtered_files: list[pathlib.Path] = []
+    for file in all_files:
+        result = re.search('RFSWDHistoryList(New|Old).*csv', str(file))
+        if result: filtered_files.append(file)
+    if len(filtered_files)==0:
+        raise RuntimeError(f'No RFSWDHistoryList(New|Old).*csv file found recurivelty from this dir : {target_dir}')
 
     # read all files & store data
     Data: list[FileData] = []
-    for nData, filepath in enumerate(all_files):
+    for nData, filepath in enumerate(filtered_files):
         with open(file=filepath, mode='r') as csvfile:
             reader = csv.DictReader(csvfile, delimiter=';')
             filedata = FileData()
