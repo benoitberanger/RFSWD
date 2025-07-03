@@ -10,9 +10,10 @@ import csv
 ###############################################################################
 # config
 ###############################################################################
-MARSDIR      : str   = '/opt/medcom/log/'
-LIM_HEAD     : float =  3.2
-LIM_HEADLOCAL: float = 20.0
+MARSDIR        : str   = '/opt/medcom/log/'
+LIM_HEAD       : float =   3.2 # W/Kg
+LIM_HEADLOCAL  : float =  20.0 # W/Kg
+LIM_8X32_ADJTRA: int   = 566   # Volt
 
 
 ###############################################################################
@@ -145,8 +146,12 @@ def main() -> None:
             BoreTemp     = float(seq['BoreTemp'])
             BoreTemp_str = ColorFormater(GetColor(BoreTemp, 18, 25), "{: 4.1f}".format(BoreTemp))
 
+            AdjTra = float(seq['DicoTstTraU[0]']);
+            AdjTra_str = ColorFormater(GetColor(AdjTra, 0, LIM_8X32_ADJTRA), "{: 7.3f}".format(AdjTra))
+
             line = (
                 f"{seq['Date']} {seq['Time']} {seq['SeqName']:{len_SeqName}s} {seq['ProtName']:{len_ProtName}s} - "
+                f"{'AdjTra'}={AdjTra_str}V - "
                 f"PREDICTED (W/Kg ~ relative): Head ({Head_value_WperKg_str} ~ {Head_relative_WperKg_str}) HeadLocal ({HeadLocal_value_WperKg_str} ~ {HeadLocal_relative_WperKg_str}) - "
                 f"BoreTemp={BoreTemp_str}"
                 )
