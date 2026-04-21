@@ -92,56 +92,59 @@ def main() -> None:
     for idxData in range(len(Data)):
         print(Data[idxData].filepath)
 
-        idx      : int       = 0
+        idx      : int       = -1
+        start_idx: int       = -1
         timestamp: list[str] = []
         sensors  : dict      = {}
-        
+
         # fetch all values
         for line in Data[idxData].line:
 
-            type: str = line['%TNAME%']
-            if type.find('CoilTempLog') == -1:
+            type: str = line['%MARKER%']
+            # on Terra.X in XA60, here are the 3 `marker` :
+            # RFCELK2364_SAT::PerCoilTemperaturesIF
+            # RFCELK2364_SAT::PerCoilTemperaturesIF-OVC
+            # RFCELK2364_SAT::PerCoilTemperaturesIF-Cables
+            # one of each is written at each "request"
+            if type.find('RFCELK2364_SAT::PerCoilTemperaturesIF') == -1:
                 continue
-            elif type == 'CoilTempLog':
-                timestamp.append(line['%TIME%'])
-                idx += 1
-            
-            content: str = line['%USERTEXT%']
 
-            content = content.replace('Current coil temperatures: ', '')
-            data: list[str] = content.split(', ')
-            
+            idx += 1
+
+            # only save 1 timestamp for each 3 "request" since they are always bundled (and written in ~1ms)
+            if type == 'RFCELK2364_SAT::PerCoilTemperaturesIF':
+                timestamp.append(line['%TIME%'])
+                if start_idx == -1:
+                    start_idx = idx
+
+            # get content and clean it
+            raw_line: str = line['%USERTEXT%']
+            sensor_content: str = raw_line.replace('Current coil temperatures: ', '')
+            end_of_ascii: int = sensor_content.find('\x80')
+            if end_of_ascii > -1:
+                sensor_content = sensor_content[:end_of_ascii]
+
+            # parse the sensor content of the line, such as`` GC_AVG: 20.81, GC1: 21.00, GC2: 20.50``
+            data: list[str] = sensor_content.split(', ')
             for sensordata in data:
 
-                # eject weird temps, such as `GC12: 20.75 \x80 Masks - GC1_4: 0xffff`
-                try:
-                    label, value = sensordata.split(': ')
-                except ValueError:
-                    continue
+                label, value = sensordata.split(': ')
 
                 # new sensor label ? add it
                 if label not in sensors.keys():
                     sensors[label] = []
 
-                # some values are HEX, dont know why
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
+                value = float(value)
                 sensors[label].append(value)
-
-        # check length of the data found for each sensor
-        N: int = 1e9
-        for label in sensors.keys():
-            N = min(N, len(sensors[label]))
-        N = min(N, len(timestamp))
 
         # reorder sensor list
         labels = sensors.keys()
         labels = sorted(labels)
 
+        N = len(timestamp)
+
         # print
-        for idx in range(N):
+        for idx in range(start_idx, N-start_idx):
             display: str = f"{timestamp[idx]} - "
 
             for label in labels:
