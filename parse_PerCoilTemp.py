@@ -9,6 +9,11 @@ import csv
 # config
 ###############################################################################
 MARSDIR: str   = '/opt/medcom/log/'
+LIMIT_TEMP: dict = { # all temps in CELSIUS degree
+    'grad' :{'min': 17.99, 'max': 84.99}, # 85° is the upper limit
+    'cable':{'min': 17.99, 'max': 39.99}, # estimaed limits
+    'ovc'  :{'min': 17.99, 'max': 29.99}, # estimaed limits
+}
 
 ###############################################################################
 # local functions & classes
@@ -79,7 +84,7 @@ def main() -> None:
 
     # read all files & store data
     Data: list[FileData] = []
-    for nData, filepath in enumerate(all_files):
+    for filepath in all_files:
         with open(file=filepath, mode='r') as logfile:
             reader = csv.DictReader(f=logfile, delimiter='|')
             filedata = FileData()
@@ -95,29 +100,37 @@ def main() -> None:
         idx      : int       = -1
         start_idx: int       = -1
         timestamp: list[str] = []
-        sensors  : dict      = {}
+        sensors  : dict      = {'grad': {}, 'cable': {}, 'ovc': {}}
         tname    : list[str] = []
 
         # fetch all values
         for line in Data[idxData].line:
 
-            type: str = line['%MARKER%']
+            maker: str = line['%MARKER%']
             # on Terra.X in XA60, here are the 3 `marker` :
             # RFCELK2364_SAT::PerCoilTemperaturesIF
             # RFCELK2364_SAT::PerCoilTemperaturesIF-OVC
             # RFCELK2364_SAT::PerCoilTemperaturesIF-Cables
             # one of each is written at each "request"
-            if type.find('RFCELK2364_SAT::PerCoilTemperaturesIF') == -1:
+            if maker.find('RFCELK2364_SAT::PerCoilTemperaturesIF') == -1:
                 continue
 
             idx += 1
 
+            type: str = '' 
             # only save 1 timestamp for each 3 "request" since they are always bundled (and written in ~1ms)
-            if type == 'RFCELK2364_SAT::PerCoilTemperaturesIF':
+            if maker == 'RFCELK2364_SAT::PerCoilTemperaturesIF':
                 timestamp.append(line['%TIME%' ])
                 tname    .append(line['%TNAME%'])
                 if start_idx == -1:
                     start_idx = idx
+                type = 'grad'
+            elif maker == 'RFCELK2364_SAT::PerCoilTemperaturesIF-Cables':
+                type = 'cable'
+            elif maker == 'RFCELK2364_SAT::PerCoilTemperaturesIF-OVC':
+                type = 'ovc'
+            else:
+                ValueError(f'Unknown %MARKER% value : {maker}')
 
             # get content and clean it
             raw_line: str = line['%USERTEXT%']
@@ -133,36 +146,33 @@ def main() -> None:
                 label, value = sensordata.split(': ')
 
                 # new sensor label ? add it
-                if label not in sensors.keys():
-                    sensors[label] = []
+                if label not in sensors[type].keys():
+                    sensors[type][label] = []
 
                 value = float(value)
-                sensors[label].append(value)
+                sensors[type][label].append(value)
 
         # prepare spacing for the TNAME
         unique_tname = set(tname)
         n_letters_unique_tname = [len(name) for name in unique_tname]
         len_tname: int = max(n_letters_unique_tname)
 
-        # reorder sensor list
-        labels = sensors.keys()
-        labels = sorted(labels)
-
         N = len(timestamp)
 
         # print
         for idx in range(start_idx, N-start_idx):
             display: str = f"{timestamp[idx]} - "
-
             display += f"{tname[idx]:{len_tname}s} - "
 
-            for label in labels:
-                value = sensors[label][idx]
-                if isinstance(value, float):
-                    temperature = ColorFormater(GetColor(value, 16, 84), "{:6.2f}".format(value))
-                else: 
-                    temperature = ''
-                display += f"{label} {temperature}  "
+            for type in sensors.keys():
+
+                for label in sensors[type]:
+                    value = sensors[type][label][idx]
+                    if isinstance(value, float):
+                        temperature = ColorFormater(GetColor(value, LIMIT_TEMP[type]['min'], LIMIT_TEMP[type]['max']), "{:6.2f}".format(value))
+                    else: 
+                        temperature = ''
+                    display += f"{label} {temperature}  "
 
             print(display)
 
