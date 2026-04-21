@@ -96,6 +96,7 @@ def main() -> None:
         start_idx: int       = -1
         timestamp: list[str] = []
         sensors  : dict      = {}
+        tname    : list[str] = []
 
         # fetch all values
         for line in Data[idxData].line:
@@ -113,7 +114,8 @@ def main() -> None:
 
             # only save 1 timestamp for each 3 "request" since they are always bundled (and written in ~1ms)
             if type == 'RFCELK2364_SAT::PerCoilTemperaturesIF':
-                timestamp.append(line['%TIME%'])
+                timestamp.append(line['%TIME%' ])
+                tname    .append(line['%TNAME%'])
                 if start_idx == -1:
                     start_idx = idx
 
@@ -137,6 +139,11 @@ def main() -> None:
                 value = float(value)
                 sensors[label].append(value)
 
+        # prepare spacing for the TNAME
+        unique_tname = set(tname)
+        n_letters_unique_tname = [len(name) for name in unique_tname]
+        len_tname: int = max(n_letters_unique_tname)
+
         # reorder sensor list
         labels = sensors.keys()
         labels = sorted(labels)
@@ -146,6 +153,8 @@ def main() -> None:
         # print
         for idx in range(start_idx, N-start_idx):
             display: str = f"{timestamp[idx]} - "
+
+            display += f"{tname[idx]:{len_tname}s} - "
 
             for label in labels:
                 value = sensors[label][idx]
