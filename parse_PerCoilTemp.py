@@ -159,7 +159,7 @@ def main() -> None:
             for label in labels:
                 value = sensors[label][idx]
                 if isinstance(value, float):
-                    temperature = ColorFormater(GetColor(value, 16, 84), "{:5.2f}".format(value))
+                    temperature = ColorFormater(GetColor(value, 16, 84), "{:6.2f}".format(value))
                 else: 
                     temperature = ''
                 display += f"{label} {temperature}  "
