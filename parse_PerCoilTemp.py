@@ -4,6 +4,7 @@
 import os
 import pathlib
 import csv
+import re
 
 ###############################################################################
 # config
@@ -112,22 +113,22 @@ def main() -> None:
             # RFCELK2364_SAT::PerCoilTemperaturesIF-OVC
             # RFCELK2364_SAT::PerCoilTemperaturesIF-Cables
             # one of each is written at each "request"
-            if maker.find('RFCELK2364_SAT::PerCoilTemperaturesIF') == -1:
+            if maker.find('PerCoilTemperaturesIF') == -1:
                 continue
 
             idx += 1
 
             type: str = '' 
             # only save 1 timestamp for each 3 "request" since they are always bundled (and written in ~1ms)
-            if maker == 'RFCELK2364_SAT::PerCoilTemperaturesIF':
+            if re.search('PerCoilTemperaturesIF$',maker):
                 timestamp.append(line['%TIME%' ])
                 tname    .append(line['%TNAME%'])
                 if start_idx == -1:
                     start_idx = idx
                 type = 'grad'
-            elif maker == 'RFCELK2364_SAT::PerCoilTemperaturesIF-Cables':
+            elif re.search('PerCoilTemperaturesIF-Cables',maker):
                 type = 'cable'
-            elif maker == 'RFCELK2364_SAT::PerCoilTemperaturesIF-OVC':
+            elif re.search('PerCoilTemperaturesIF-OVC',maker):
                 type = 'ovc'
             else:
                 ValueError(f'Unknown %MARKER% value : {maker}')
