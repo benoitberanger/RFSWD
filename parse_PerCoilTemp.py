@@ -118,18 +118,18 @@ def main() -> None:
 
             idx += 1
 
-            type: str = '' 
+            src: str = '' 
             # only save 1 timestamp for each 3 "request" since they are always bundled (and written in ~1ms)
             if re.search('PerCoilTemperaturesIF$',maker):
                 timestamp.append(line['%TIME%' ])
                 tname    .append(line['%TNAME%'])
                 if start_idx == -1:
                     start_idx = idx
-                type = 'grad'
+                src = 'grad'
             elif re.search('PerCoilTemperaturesIF-Cables',maker):
-                type = 'cable'
+                src = 'cable'
             elif re.search('PerCoilTemperaturesIF-OVC',maker):
-                type = 'ovc'
+                src = 'ovc'
             else:
                 ValueError(f'Unknown %MARKER% value : {maker}')
 
@@ -140,18 +140,21 @@ def main() -> None:
             if end_of_ascii > -1:
                 sensor_content = sensor_content[:end_of_ascii]
 
-            # parse the sensor content of the line, such as`` GC_AVG: 20.81, GC1: 21.00, GC2: 20.50``
+            # parse the sensor content of the line, such as `GC_AVG: 20.81, GC1: 21.00, GC2: 20.50`
             data: list[str] = sensor_content.split(', ')
             for sensordata in data:
 
                 label, value = sensordata.split(': ')
 
                 # new sensor label ? add it
-                if label not in sensors[type].keys():
-                    sensors[type][label] = []
+                if label not in sensors[src].keys():
+                    sensors[src][label] = []
 
-                value = float(value)
-                sensors[type][label].append(value)
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
+                sensors[src][label].append(value)
 
         # prepare spacing for the TNAME
         unique_tname = set(tname)
@@ -160,19 +163,28 @@ def main() -> None:
 
         N = len(timestamp)
 
+        # if two few entries in one category, don't display it
+        if len(sensors['cable'])>0:
+            keys_cable = list(sensors['cable'])
+            if len(sensors['cable'][keys_cable[0]]) + 1 < N:
+                sensors['cable'] = {}
+        if len(sensors['ovc'])>0:
+            keys_ovc = list(sensors['ovc'])
+            if len(sensors['ovc'][keys_ovc[0]]) + 1 < N:
+                sensors['ovc'] = {}
+
         # print
         for idx in range(start_idx, N-start_idx):
             display: str = f"{timestamp[idx]} - "
             display += f"{tname[idx]:{len_tname}s} - "
 
-            for type in sensors.keys():
-
-                for label in sensors[type]:
-                    value = sensors[type][label][idx]
+            for src in sensors.keys():
+                for label in sensors[src]:
+                    value = sensors[src][label][idx]
                     if isinstance(value, float):
-                        temperature = ColorFormater(GetColor(value, LIMIT_TEMP[type]['min'], LIMIT_TEMP[type]['max']), "{:6.2f}".format(value))
+                        temperature = ColorFormater(GetColor(value, LIMIT_TEMP[src]['min'], LIMIT_TEMP[src]['max']), "{:6.2f}".format(value))
                     else: 
-                        temperature = ''
+                        temperature = f"{value:6s}"
                     display += f"{label} {temperature}  "
 
             print(display)
