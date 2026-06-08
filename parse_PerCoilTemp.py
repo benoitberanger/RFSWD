@@ -182,10 +182,11 @@ def main() -> None:
                 for label in sensors[src]:
                     value = sensors[src][label][idx]
                     if isinstance(value, float):
-                        temperature = ColorFormater(GetColor(value, LIMIT_TEMP[src]['min'], LIMIT_TEMP[src]['max']), "{:6.2f}".format(value))
+                        value = round(value)
+                        temperature = ColorFormater(GetColor(value, LIMIT_TEMP[src]['min'], LIMIT_TEMP[src]['max']), "{:3d}".format(value))
                     else: 
-                        temperature = f"{value:6s}"
-                    display += f"{label} {temperature}  "
+                        temperature = f"{value:3s}"
+                    display += f"{label}{temperature} "
 
             print(display)
 
