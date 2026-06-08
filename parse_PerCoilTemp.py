@@ -12,8 +12,8 @@ import re
 MARSDIR: str   = '/opt/medcom/log/'
 LIMIT_TEMP: dict = { # all temps in CELSIUS degree
     'grad' :{'min': 17.99, 'max': 84.99}, # 85° is the upper limit
-    'cable':{'min': 17.99, 'max': 39.99}, # estimaed limits
-    'ovc'  :{'min': 17.99, 'max': 29.99}, # estimaed limits
+    'cable':{'min': 17.99, 'max': 49.99}, # estimaed limits
+    'ovc'  :{'min': 17.99, 'max': 34.99}, # estimaed limits
 }
 
 ###############################################################################
